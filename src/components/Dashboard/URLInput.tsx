@@ -29,12 +29,54 @@ const URLInput: React.FC = () => {
       return;
     }
     if (!url) return;
+    await generateTests(url);
+  };
 
+  const generateTests = async (targetUrl: string) => {
+    if (!targetUrl) return;
+    // normalize URL
+    let normalized = targetUrl.trim();
+    if (!/^https?:\/\//i.test(normalized)) {
+      normalized = `https://${normalized}`;
+    }
+
+    setUrl(normalized);
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      window.dispatchEvent(new CustomEvent('test-generation:started'));
+      const token = localStorage.getItem('jwt');
+      const resp = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}/api/tests/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: 'include',
+        body: JSON.stringify({ url: normalized })
+      });
+      const data = await resp.json();
+      const event = new CustomEvent('test-generation:completed', { detail: data });
+      window.dispatchEvent(event);
+    } catch (err) {
+      console.error('Generation error', err);
+      const event = new CustomEvent('test-generation:completed', { detail: { success: false, message: 'Failed to generate' } });
+      window.dispatchEvent(event);
+    } finally {
       setIsLoading(false);
-    }, 2000);
+    }
+  };
+
+  const handlePaste = async (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const pasted = e.clipboardData?.getData('text')?.trim();
+    if (!pasted) return;
+    // if user is not authenticated, redirect to login
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    // prevent the default paste so we control normalization
+    e.preventDefault();
+    await generateTests(pasted);
   };
 
   return (
@@ -52,6 +94,7 @@ const URLInput: React.FC = () => {
             type="url"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
+            onPaste={handlePaste}
             onClick={handleInputClick}
             onFocus={handleInputFocus}
             placeholder="Paste Web App URL"

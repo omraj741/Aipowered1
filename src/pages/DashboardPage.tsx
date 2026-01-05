@@ -13,6 +13,7 @@ import FlakyTestsList from '../components/Dashboard/FlakyTestsList';
 import HealingList from '../components/Dashboard/HealingList';
 import CommandPanel from '../components/BoltAI/CommandPanel';
 import URLInput from '../components/Dashboard/URLInput';
+import TestGenerationPanel from '../components/Dashboard/TestGenerationPanel';
 import { staggerChildren, fadeIn } from '../utils/animations';
 
 const DashboardPage: React.FC = () => {
@@ -53,6 +54,9 @@ const DashboardPage: React.FC = () => {
         </motion.div>
 
         <URLInput />
+        <div className="mb-6">
+          <TestGenerationPanel />
+        </div>
         
         {/* Quick stats */}
         <motion.div 

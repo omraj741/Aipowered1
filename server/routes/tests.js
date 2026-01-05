@@ -3,6 +3,7 @@ const TestResult = require('../models/TestResult');
 const HealingAction = require('../models/HealingAction');
 const FlakyTest = require('../models/FlakyTest');
 const { authenticateToken } = require('../middleware/auth');
+const { generateTestsForUrl } = require('../services/testGenerationService');
 
 const router = express.Router();
 
@@ -257,3 +258,26 @@ router.get('/flaky/trends', authenticateToken, async (req, res) => {
 });
 
 module.exports = router;
+
+// Generate tests for a given URL
+router.post('/generate', authenticateToken, async (req, res) => {
+  try {
+    const { url, framework = 'playwright', options } = req.body || {};
+
+    if (!url || typeof url !== 'string') {
+      return res.status(400).json({ success: false, message: 'url is required' });
+    }
+
+    const result = await generateTestsForUrl({
+      url,
+      userId: req.user.id,
+      framework,
+      options: options || {}
+    });
+
+    return res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('Test generation error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to generate tests' });
+  }
+});
